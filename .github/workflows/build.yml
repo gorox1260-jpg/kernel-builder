@@ -24,7 +24,7 @@ jobs:
         cd kernel
         curl -LSs "https://githubusercontent.com" | bash -s main
         git clone https://github.com
-        cp susfs4ksu-module/kernel_patches/5.4/* ./
+        cp -r susfs4ksu-module/kernel_patches/5.4/* ./
         patch -p1 < 5.4_patch.patch
 
     - name: Build Kernel
@@ -48,4 +48,3 @@ jobs:
       with:
         name: AnyKernel3-pissarro
         path: AnyKernel3-pissarro.zip
-
