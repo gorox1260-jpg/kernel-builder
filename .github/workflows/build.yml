@@ -1,0 +1,51 @@
+name: Build KernelSU Next + SUSFS
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Build Environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bc bison build-essential flex ccache libssl-dev libelf-dev git clang lld
+
+    - name: Clone Toolchain
+      run: |
+        git clone --depth=1 https://gitlab.com -b clang-17 clang
+
+    - name: Clone Kernel Source
+      run: |
+        git clone --depth=1 https://github.com -b liquid-11.0 kernel
+
+    - name: Patch KernelSU Next & SUSFS
+      run: |
+        cd kernel
+        curl -LSs "https://githubusercontent.com" | bash -s main
+        git clone https://github.com
+        cp susfs4ksu-module/kernel_patches/5.4/* ./
+        patch -p1 < 5.4_patch.patch
+
+    - name: Build Kernel
+      run: |
+        cd kernel
+        export PATH=$GITHUB_WORKSPACE/clang/bin:$PATH
+        export ARCH=arm64
+        export SUBARCH=arm64
+        make O=out pissarro_defconfig
+        make -j$(nproc --all) O=out CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu-
+
+    - name: Pack AnyKernel3
+      run: |
+        git clone https://github.com
+        cp kernel/out/arch/arm64/boot/Image AnyKernel3/
+        cd AnyKernel3
+        zip -r9 ../AnyKernel3-pissarro.zip *
+
+    - name: Upload Kernel
+      uses: actions/upload-artifact@v4
+      with:
+        name: AnyKernel3-pissarro
+        path: AnyKernel3-pissarro.zip
+
